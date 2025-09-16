@@ -31,39 +31,39 @@ const searchSchema = {
   query: z
     .string()
     .min(1)
-    .describe('Texto libre para buscar en cliente, producto, región o estado')
+    .describe('Texto libre para buscar en cliente, producto, región o estado'),
+  filters: z
+    .object({
+      customer: z.string().optional().describe('Nombre exacto del cliente'),
+      product: z.string().optional().describe('Nombre exacto del producto'),
+      region: z
+        .enum(['Norte', 'Sur', 'Este', 'Oeste', 'Centro'])
+        .optional()
+        .describe('Región exacta a filtrar'),
+      status: z
+        .enum(['Completed', 'Pending', 'Cancelled'])
+        .optional()
+        .describe('Estado de la venta a filtrar'),
+      minTotal: z.number().optional().describe('Monto total mínimo de la venta'),
+      maxTotal: z.number().optional().describe('Monto total máximo de la venta'),
+    })
+    .partial()
     .optional(),
-  customer: z.string().describe('Nombre exacto del cliente a filtrar').optional(),
-  product: z.string().describe('Nombre exacto del producto a filtrar').optional(),
-  region: z
-    .enum(['Norte', 'Sur', 'Este', 'Oeste', 'Centro'])
-    .describe('Región exacta a filtrar')
-    .optional(),
-  status: z
-    .enum(['Completed', 'Pending', 'Cancelled'])
-    .describe('Estado de la venta a filtrar')
-    .optional(),
-  minTotal: z.number().describe('Monto total mínimo de la venta').optional(),
-  maxTotal: z.number().describe('Monto total máximo de la venta').optional(),
   limit: z
     .number()
     .min(1)
-    .max(50)
+    .max(100)
     .describe('Máximo de resultados a devolver (default 20)')
     .optional(),
 };
 
 const fetchSchema = {
+  id: z.string().min(1).describe('ID único de una venta devuelto por search').optional(),
   ids: z
     .array(z.string().min(1))
     .min(1)
     .max(50)
-    .describe('Lista de IDs devueltos por la acción search')
-    .optional(),
-  id: z
-    .string()
-    .min(1)
-    .describe('ID único de una venta devuelto por search')
+    .describe('Lista de IDs devueltos por search')
     .optional(),
 };
 
@@ -129,17 +129,17 @@ const createServer = () => {
     'search',
     'Busca ventas por texto libre o filtros exactos',
     searchSchema,
-    async ({
-      query,
-      customer,
-      product,
-      region,
-      status,
-      minTotal,
-      maxTotal,
-      limit,
-    }) => {
-      const normalizedQuery = query?.toLowerCase();
+    async ({ query, filters, limit }) => {
+      const normalizedQuery = query.toLowerCase();
+      const {
+        customer = undefined,
+        product = undefined,
+        region = undefined,
+        status = undefined,
+        minTotal = undefined,
+        maxTotal = undefined,
+      } = filters ?? {};
+
       const matches = DATASET.filter((sale) => {
         if (customer && sale.customerName !== customer) return false;
         if (product && sale.productName !== product) return false;
@@ -148,12 +148,8 @@ const createServer = () => {
         if (typeof minTotal === 'number' && sale.totalAmount < minTotal) return false;
         if (typeof maxTotal === 'number' && sale.totalAmount > maxTotal) return false;
 
-        if (normalizedQuery) {
-          const haystack = `${sale.customerName} ${sale.productName} ${sale.region} ${sale.status}`.toLowerCase();
-          return haystack.includes(normalizedQuery);
-        }
-
-        return true;
+        const haystack = `${sale.customerName} ${sale.productName} ${sale.region} ${sale.status}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
       });
 
       const capped = matches.slice(0, limit ?? 20);
@@ -171,13 +167,8 @@ const createServer = () => {
         returned: results.length,
         note: DATA_NOTE,
         query: {
-          query: query ?? null,
-          customer: customer ?? null,
-          product: product ?? null,
-          region: region ?? null,
-          status: status ?? null,
-          minTotal: minTotal ?? null,
-          maxTotal: maxTotal ?? null,
+          query,
+          filters: filters ?? null,
           limit: limit ?? null,
         },
       };
