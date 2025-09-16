@@ -1,0 +1,45 @@
+﻿<main class="container" role="main">
+  <header class="header">
+    <h1>{{ title }}</h1>
+    <p>Listado ficticio de 100 registros de ventas generados aleatoriamente.</p>
+  </header>
+
+  <section class="summary" aria-label="Resumen de registros">
+    <p><strong>Total de registros:</strong> {{ sales.length }}</p>
+  </section>
+
+  <section class="table-wrapper" aria-live="polite">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Cliente</th>
+          <th scope="col">Producto</th>
+          <th scope="col">Región</th>
+          <th scope="col" class="numeric">Cantidad</th>
+          <th scope="col" class="numeric">Precio unitario</th>
+          <th scope="col" class="numeric">Total</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sale of sales">
+          <td data-label="ID">{{ sale.id }}</td>
+          <td data-label="Cliente">{{ sale.customerName }}</td>
+          <td data-label="Producto">{{ sale.productName }}</td>
+          <td data-label="Región">{{ sale.region }}</td>
+          <td data-label="Cantidad" class="numeric">{{ sale.quantity }}</td>
+          <td data-label="Precio unitario" class="numeric">{{ sale.unitPrice | currency:'USD':'symbol':'1.0-0' }}</td>
+          <td data-label="Total" class="numeric">{{ sale.totalAmount | currency:'USD':'symbol':'1.2-2' }}</td>
+          <td data-label="Fecha">{{ sale.saleDate | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td data-label="Estado">
+            <span class="badge" [class.pending]="sale.status === 'Pending'" [class.cancelled]="sale.status === 'Cancelled'">
+              {{ sale.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
