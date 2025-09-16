@@ -58,12 +58,12 @@ const searchSchema = {
 };
 
 const fetchSchema = {
-  id: z.string().min(1).describe('ID único de una venta devuelto por search').optional(),
+  id: z.string().min(1).describe('ID principal devuelto por search'),
   ids: z
     .array(z.string().min(1))
     .min(1)
     .max(50)
-    .describe('Lista de IDs devueltos por search')
+    .describe('Lista adicional de IDs devueltos por search')
     .optional(),
 };
 
@@ -195,11 +195,7 @@ const createServer = () => {
     'Recupera detalles completos de ventas por ID',
     fetchSchema,
     async ({ ids, id }) => {
-      const requestedIds = ids ?? (id ? [id] : []);
-      if (requestedIds.length === 0) {
-        throw new Error('Debes proporcionar al menos un ID o la lista de IDs.');
-      }
-
+      const requestedIds = [id, ...(ids ?? [])];
       const uniqueIds = [...new Set(requestedIds)];
       const records = [];
       const missing = [];
